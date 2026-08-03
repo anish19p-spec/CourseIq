@@ -47,24 +47,44 @@ The backend responds with JSON similar to:
 
 ### Backend
 
+Run these commands from the repository or worktree root:
+
 ```bash
-cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r backend/requirements-dev.txt
 export GEMINI_API_KEY="your-key"
-uvicorn main:app --reload --port 8000
+python -m pytest
+python -m uvicorn main:app --reload --port 8000 --app-dir backend
 ```
 
 ### Frontend
 
+Run these commands from a second terminal at the repository or worktree root:
+
 ```bash
-cd frontend
-npm install
-npm run dev
+npm ci --prefix frontend
+npm exec --prefix frontend -- tsc --noEmit --project frontend/tsconfig.json
+npm run dev --prefix frontend
 ```
 
 Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` in `frontend/.env.local` when running the UI locally.
+
+Verify the running services at:
+
+- Frontend: `http://localhost:3000`
+- Backend health: `http://localhost:8000/health`
+
+## Feature Worktrees
+
+Create each feature or fix from the latest `main` branch in a fresh worktree:
+
+```bash
+git pull --ff-only
+git worktree add .worktrees/<task> -b feature/<task> main
+```
+
+Develop, test, commit, and push inside that worktree. After its pull request is merged, remove the worktree instead of reusing it for another task.
 
 ## Database
 
