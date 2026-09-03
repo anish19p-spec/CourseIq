@@ -8,7 +8,13 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from engine import CourseAnalyzer
-from extract import extract_text_from_pdf, parse_syllabus_with_ai
+from extract import (
+	MAX_PDF_SIZE_BYTES,
+	PDFValidationError,
+	extract_text_from_pdf,
+	parse_syllabus_with_ai,
+	validate_pdf_upload,
+)
 
 
 app = FastAPI(title="CourseIQ API", version="1.0.0")
@@ -23,9 +29,11 @@ app.add_middleware(
 
 
 async def _write_upload_to_temp_pdf(upload: UploadFile) -> str:
+	content = await upload.read(MAX_PDF_SIZE_BYTES + 1)
+	validate_pdf_upload(upload.filename, content)
 	temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
 	try:
-		temp_file.write(await upload.read())
+		temp_file.write(content)
 		temp_file.flush()
 		return temp_file.name
 	finally:
@@ -52,7 +60,8 @@ async def analyze_course(
 			raise HTTPException(status_code=400, detail="Only PDF uploads are supported.")
 
 		temp_path = await _write_upload_to_temp_pdf(file)
-		raw_text = extract_text_from_pdf(temp_path)
+		document = extract_text_from_pdf(temp_path)
+		raw_text = "\n\n".join(page.text for page in document.pages)
 		syllabus = parse_syllabus_with_ai(raw_text)
 
 		analyzer = CourseAnalyzer(
@@ -70,9 +79,12 @@ async def analyze_course(
 			"student_multiplier": analysis["student_multiplier"],
 			"assignment_inventory": analysis["assignment_inventory"],
 			"semester_weeks": CourseAnalyzer.SEMESTER_WEEKS,
+			"warnings": document.warnings,
 		}
 	except HTTPException:
 		raise
+	except PDFValidationError as exc:
+		raise HTTPException(status_code=400, detail=str(exc)) from exc
 	except Exception as exc:
 		raise HTTPException(status_code=500, detail=str(exc)) from exc
 	finally:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -10,6 +9,16 @@ import pdfplumber
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+
+from documents import ExtractedDocument, ExtractedPage
+
+
+MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024
+PDF_SIGNATURE = b"%PDF-"
+
+
+class PDFValidationError(ValueError):
+    """Raised when an upload cannot be accepted as a PDF."""
 
 
 class SyllabusData(BaseModel):
@@ -20,28 +29,52 @@ class SyllabusData(BaseModel):
     has_final_exam: bool
 
 
-def extract_text_from_pdf(pdf_path: str) -> str:
-    """Safely extract text from a PDF file by iterating pages defensively."""
+def validate_pdf_upload(filename: str | None, content: bytes) -> None:
+    """Validate that an upload is a supported PDF before parsing it."""
+
+    if not filename or Path(filename).suffix.lower() != ".pdf":
+        raise PDFValidationError("Upload must use a .pdf filename.")
+    if len(content) > MAX_PDF_SIZE_BYTES:
+        raise PDFValidationError("PDF upload exceeds the 10 MB limit.")
+    if not content.startswith(PDF_SIGNATURE):
+        raise PDFValidationError("Upload does not contain a valid PDF signature.")
+
+
+def extract_text_from_pdf(pdf_path: str) -> ExtractedDocument:
+    """Extract readable PDF pages and report page-level warnings."""
 
     path = Path(pdf_path)
     if not path.exists():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-    extracted_chunks: list[str] = []
-    with pdfplumber.open(path) as pdf:
-        for page in pdf.pages:
-            try:
-                page_text = page.extract_text() or ""
-            except Exception:
-                page_text = ""
-            normalized = re.sub(r"\s+", " ", page_text).strip()
-            if normalized:
-                extracted_chunks.append(normalized)
+    extracted_pages: list[ExtractedPage] = []
+    warnings: list[str] = []
+    try:
+        pdf = pdfplumber.open(path)
+    except Exception as exc:
+        raise PDFValidationError("PDF could not be opened or is malformed.") from exc
 
-    clean_text = "\n".join(extracted_chunks).strip()
-    if not clean_text:
-        raise ValueError("No readable text could be extracted from the uploaded PDF.")
-    return clean_text
+    with pdf as opened_pdf:
+        for page_number, page in enumerate(opened_pdf.pages, start=1):
+            try:
+                page_text = page.extract_text()
+            except Exception:
+                warnings.append(f"Page {page_number} could not be read.")
+                continue
+            if not page_text or not page_text.strip():
+                warnings.append(f"Page {page_number} contained no readable text.")
+                continue
+            extracted_pages.append(
+                ExtractedPage(
+                    text=page_text.strip(),
+                    filename=path.name,
+                    page_number=page_number,
+                )
+            )
+
+    if not extracted_pages:
+        raise PDFValidationError("No readable text could be found in the uploaded PDF.")
+    return ExtractedDocument(pages=extracted_pages, warnings=warnings)
 
 
 @lru_cache(maxsize=1)

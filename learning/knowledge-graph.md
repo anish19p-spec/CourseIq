@@ -4,11 +4,11 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 
 ## [[git-snapshots-and-staging]]
 
-- status: practicing
+- status: understood
 - depends-on: none
 - introduced: 2026-07-31
-- last-reviewed: 2026-08-02
-- evidence: Explained that `git add` queues changes until commit, distinguished untracked files from tracked diffs, predicted that newly staged files use `A`, and read the staged status correctly.
+- last-reviewed: 2026-09-03
+- evidence: After a month, independently recalled that `git add` queues the current changes, `git commit` creates the local snapshot that can be pushed, and then staged the full PDF checkpoint correctly.
 
 ## [[branches-and-worktrees]]
 
@@ -52,11 +52,59 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 
 ## [[pdf-text-extraction]]
 
-- status: introduced
+- status: practicing
 - depends-on: [[python-control-flow]]
 - introduced: 2026-07-31
-- last-reviewed: 2026-08-01
-- evidence: Correctly identified that flattening whitespace can erase boundaries between homework, exam, and other syllabus sections.
+- last-reviewed: 2026-08-15
+- evidence: Summarized that the revised extractor records document warnings when a page is skipped, then ran the seven-test suite successfully.
+
+## [[extraction-error-policy]]
+
+- status: practicing
+- depends-on: [[pdf-text-extraction]], [[document-metadata]]
+- introduced: 2026-08-14
+- last-reviewed: 2026-08-15
+- evidence: Chose to retain readable pages while reporting failed page numbers, correctly expected pages 1 and 3 when page 2 failed, and summarized the resulting behavior.
+
+## [[pdf-upload-validation]]
+
+- status: practicing
+- depends-on: [[pdf-text-extraction]], [[extraction-error-policy]]
+- introduced: 2026-08-17
+- last-reviewed: 2026-08-18
+- evidence: Explained that a renamed file is not a true PDF, chose a 10 MB limit and HTTP 400 for malformed input, set the exact one-byte-over boundary, and ran the twelve-test suite successfully.
+
+## [[python-bytes]]
+
+- status: introduced
+- depends-on: [[python-types]]
+- introduced: 2026-08-17
+- last-reviewed: 2026-08-18
+- evidence: Initially described the PDF signature as a raw file, then used a provided bytes literal to model plain-text upload contents; no independent explanation yet.
+
+## [[exception-mapping]]
+
+- status: practicing
+- depends-on: [[pdf-upload-validation]], [[fastapi-request-flow]]
+- introduced: 2026-08-18
+- last-reviewed: 2026-08-18
+- evidence: Chose HTTP 400 for invalid and malformed PDFs, predicted the malformed test would fail before parser-error conversion, and requested a specific no-text-found message.
+
+## [[async-await]]
+
+- status: introduced
+- depends-on: [[fastapi-request-flow]]
+- introduced: 2026-08-15
+- last-reviewed: 2026-08-15
+- evidence: Asked what `async` means while reviewing the upload endpoint; no independent explanation yet.
+
+## [[test-doubles-and-monkeypatching]]
+
+- status: introduced
+- depends-on: [[automated-testing]], [[python-module-imports]]
+- introduced: 2026-08-03
+- last-reviewed: 2026-08-03
+- evidence: Asked what `MagicMock` means and used a provided fake-page test, but has not yet explained test isolation independently.
 
 ## [[document-adapters]]
 
@@ -68,11 +116,11 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 
 ## [[document-metadata]]
 
-- status: introduced
+- status: practicing
 - depends-on: none
 - introduced: 2026-07-31
-- last-reviewed: 2026-07-31
-- evidence: Chose filename and page number as the first citation metadata.
+- last-reviewed: 2026-08-12
+- evidence: Identified page number and content as model fields, recalled filename after prompting, and explained that invented page numbers would pull fake information.
 
 ## [[recursive-chunking]]
 
@@ -156,19 +204,19 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 
 ## [[pydantic-models]]
 
-- status: seed
+- status: practicing
 - depends-on: [[python-types]]
-- introduced: not yet
-- last-reviewed: not yet
-- evidence: Not yet probed.
+- introduced: 2026-08-06
+- last-reviewed: 2026-08-12
+- evidence: Correctly predicted that page zero should raise a validation error and ran three model tests plus the six-test suite successfully.
 
 ## [[python-types]]
 
-- status: seed
+- status: introduced
 - depends-on: none
-- introduced: not yet
-- last-reviewed: not yet
-- evidence: Not yet probed.
+- introduced: 2026-08-06
+- last-reviewed: 2026-08-06
+- evidence: Explained that a missing optional page number becomes `None` after learning the `int | None = None` annotation and default.
 
 ## [[workload-estimation]]
 
@@ -183,8 +231,8 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 - status: practicing
 - depends-on: [[python-control-flow]]
 - introduced: 2026-08-01
-- last-reviewed: 2026-08-01
-- evidence: Authored status-code and JSON assertions, learned that one test can contain multiple assertions, ran pytest, and reported one clean passing test.
+- last-reviewed: 2026-08-18
+- evidence: Predicted the twelve-test total, observed the intentional 500-versus-400 assertion failure, and reran the repaired full suite successfully.
 
 ## [[http-test-client]]
 

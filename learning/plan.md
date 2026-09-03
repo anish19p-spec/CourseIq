@@ -35,11 +35,19 @@ CourseIQ helps students compare class difficulty and understand professor feedba
 
 ## Section 2 — Extract Trustworthy Documents
 
-**Deliverable:** Given a text-based PDF, TXT, or DOCX syllabus, CourseIQ returns a common list of document pages with clean text, filename, page number when available, and clear errors for unsupported or unreadable files.
+**Deliverable:** Given a text-based PDF syllabus, CourseIQ returns document pages with clean text, filename, real page numbers, warnings for skipped pages, and clear errors for invalid or unreadable PDFs.
 
-**Payload receipt:** Requested directly for the first RAG implementation; PDF is primary, with TXT and DOCX included now and OCR postponed.
+**Payload receipt:** Requested directly for the first RAG implementation; PDF is now the primary vertical slice, with TXT, DOCX, and OCR explicitly postponed until the core RAG path works.
 
 **Reclaim exactly one:** `backend/extract.py` — explain its current PDF loop, break an extraction case deliberately, predict the failure, and replace the flatten-to-one-string behavior with tested document adapters.
+
+### Tasks
+
+- [x] Characterize the current PDF extractor with focused tests, including the syllabus structure it currently destroys.
+- [x] Define and test one common extracted-page model shared by every supported file type.
+- [x] Replace PDF flattening with page-preserving extraction and clear unreadable-file errors.
+- [x] Validate PDF uploads using file evidence and return predictable client errors for invalid or unreadable PDFs.
+- Deferred: add TXT and DOCX adapters after the PDF-based RAG path is working.
 
 ## Section 3 — Chunk Syllabi Without Losing Their Structure
 
