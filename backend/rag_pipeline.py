@@ -2,30 +2,33 @@ import os
 import json 
 from pathlib import Path
 from typing import Any, cast
-import chromadb
 from dotenv import load_dotenv
 from google import genai
 
+from chunking import split_text_recursively
+from documents import DocumentChunk
+from vector_store import get_collection, store_chunks, search_course_chunks
+
 load_dotenv()
 
-chroma_client = chromadb.Client()
-collection = chroma_client.get_or_create_collection(
-    name="documents",
-    metadata={"Description": "documentation for RAG agent"},
-)
+
+class EmbeddingConfigurationError(ValueError):
+    """Raised when the backend lacks embedding-provider configuration."""
 
 
 def _get_genai_client() -> genai.Client:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable is required for embeddings.")
+        raise EmbeddingConfigurationError(
+            "GEMINI_API_KEY is not configured on the backend. Add it to the worktree .env file and restart the backend."
+        )
     return genai.Client(api_key=api_key)
 
 
 def _embed_text(text: str) -> list[float]:
     client = _get_genai_client()
     response = client.models.embed_content(
-        model="text-embedding-004",
+        model="gemini-embedding-2",
         contents=text,
     )
 
@@ -38,6 +41,46 @@ def _embed_text(text: str) -> list[float]:
 
     return list(embedding.values)
 
+def index_document_chunks(chunks: list[DocumentChunk], path: str | Path | None = None) -> int:
+    """Embed validated chunks and persist them with their citation metadata."""
+    embeddings = [_embed_text(chunk.text) for chunk in chunks]
+    return store_chunks(chunks, embeddings, path)
+
+
+def retrieve_course_evidence(
+    question: str, course_id: str, n_results: int = 5, path: str | Path | None = None,
+) -> list[dict]:
+    """Embed a student's question and search only the selected course."""
+    if not question.strip():
+        raise ValueError("question cannot be empty")
+    if not course_id.strip():
+        raise ValueError("course_id cannot be empty")
+    if isinstance(n_results, bool) or not isinstance(n_results, int) or n_results < 1:
+        raise ValueError("n_results must be a positive integer")
+    return search_course_chunks(_embed_text(question), course_id, n_results, path)
+
+
+def format_course_evidence(results: list[dict]) -> str:
+    """Attach source-faithful citations to retrieved excerpts."""
+    if not results:
+        return "No syllabus evidence found for the selected course."
+    excerpts = []
+    for result in results:
+        source = result["filename"]
+        page_number = result.get("page_number")
+        if page_number is not None:
+            source = f"{source}, p. {page_number}"
+        excerpts.append(f"[{source}]\n{result['text']}")
+    return "\n\n".join(excerpts)
+
+
+def retrieve_cited_course_evidence(
+    question: str, course_id: str, n_results: int = 5, path: str | Path | None = None,
+) -> str:
+    """Retrieve one course's evidence and format its existing source citations."""
+    return format_course_evidence(retrieve_course_evidence(question, course_id, n_results, path))
+
+
 def main():
     vector = _embed_text("Dr. Smith is a great professor")
 
@@ -48,31 +91,9 @@ def main():
         print("Error: No embeddings returned from the API.")
     
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
-    """
-    Split text into overlapping chunks.
-
-    Why overlap? So we don't cut important context in half.
-    A question might span two chunks - overlap helps with that.
-    """
-    chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-
-        # Try to break at a sentence boundary
-        if end < len(text):
-            # Look for last period, question mark, or newline
-            last_break = max(chunk.rfind(". "), chunk.rfind("? "), chunk.rfind("\n"))
-            if last_break > chunk_size // 2:  # Only if we're past halfway
-                end = start + last_break + 1
-                chunk = text[start:end]
-
-        chunks.append(chunk.strip())
-        start = end - overlap  # Overlap with previous chunk
-
-    return [c for c in chunks if c]  # Remove empty chunks
+    """Keep the original RAG API while using the validated splitter."""
+    
+    return split_text_recursively(text, chunk_size, overlap)
 
 
 def load_and_index_documents(docs_path: str):
@@ -119,7 +140,7 @@ def load_and_index_documents(docs_path: str):
                 ]
 
                 # Add to collection
-                collection.add(
+                get_collection().add(
                     ids=cast(Any, ids),
                     embeddings=cast(Any, embeddings),
                     documents=cast(Any, chunks),
@@ -145,7 +166,7 @@ def search_documents(query: str, n_results: int = 5) -> list[dict]:
     query_embedding = _embed_text(query)
 
     # Search ChromaDB
-    results: Any = collection.query(
+    results: Any = get_collection().query(
         query_embeddings=[query_embedding],
         n_results=n_results,
         include=["documents", "metadatas", "distances"],
@@ -229,7 +250,7 @@ def search_knowledge_base(query: str, num_results: int = 5) -> str:
 def list_available_documents() -> str:
     """List all indexed documents."""
     # Get all unique sources from the collection
-    all_data = collection.get(include=["metadatas"])
+    all_data = get_collection().get(include=["metadatas"])
 
     if not all_data["metadatas"]:
         return "No documents have been indexed yet."
