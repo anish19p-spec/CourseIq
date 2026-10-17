@@ -15,4 +15,5 @@ build/
 .venv/
 .worktrees/
 .data/chroma/
+benchmark-results/
 frontend/tsconfig.tsbuildinfo

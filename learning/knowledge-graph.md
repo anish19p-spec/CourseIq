@@ -162,6 +162,14 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 - last-reviewed: 2026-10-09
 - evidence: Used Chroma's `is_persistent` setting to characterize the borrowed client as memory-only and ran the 23-test suite successfully.
 
+## [[ingestion-performance-measurement]]
+
+- status: introduced
+- depends-on: [[recursive-chunking]], [[embeddings-and-vector-search]], [[automated-testing]]
+- introduced: 2026-10-16
+- last-reviewed: 2026-10-16
+- evidence: Requested a baseline recording scan timings, API calls, tokens and chunks; measurement differences, provider usage gaps and offline/live scope were explained. Independent interpretation of a live report remains pending.
+
 ## [[frontend-course-api-integration]]
 
 - status: introduced

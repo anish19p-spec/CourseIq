@@ -109,6 +109,17 @@ backend. Extraction and embeddings were substituted; real PDFs and live Gemini
 remain unverified in this browser flow. The UI returns evidence excerpts; generated
 answers are still pending. See `learning/ui-smoke-check.md`.
 
+## Ingestion Benchmark — Initial Performance Baseline
+
+- [x] Add offline and explicit live benchmark modes for the current ingestion functions.
+- [x] Record stage timings, chunk statistics, request attempts, response token usage, failures and reproducibility fingerprints.
+- [x] Verify measurements with real PDF extraction/storage and mocked provider HTTP responses; full suite passes 68 tests.
+- [ ] Run the student's actual syllabus once in live mode and inspect the measured bottleneck.
+
+Implemented in the separate `feature/ingestion-benchmark` worktree. Reports do
+not change the running upload API. No paid API calls were made during development.
+See `backend/benchmarks/README.md` for commands and token-reporting limits.
+
 ## Section 6 — Estimate Explainable Category Workload
 
 **Deliverable:** Each course shows category-level estimated weekly hours and intensity using grading weight, course level, credit hours, course type, assignment count, and weekly frequency; the schedule also shows each course's relative share.

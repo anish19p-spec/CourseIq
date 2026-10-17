@@ -71,6 +71,14 @@ The backend responds with JSON similar to:
 }
 ```
 
+## Ingestion Performance Benchmark
+
+`backend/benchmark_ingestion.py` produces stage timings, chunk statistics,
+per-request latencies, API/HTTP counts and provider token usage when reported.
+It defaults to offline mode; `--live` enables Gemini calls. Reports and vector
+storage are isolated from saved courses. See `backend/benchmarks/README.md` for
+commands, reproducibility notes and measurement limits.
+
 ## Local Setup
 
 ### Backend
