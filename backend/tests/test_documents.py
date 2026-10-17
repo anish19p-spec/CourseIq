@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from documents import ExtractedPage
+from documents import DocumentChunk, ExtractedPage
 
 
 def test_extracted_page_keeps_pdf_citation_metadata() -> None:
@@ -28,4 +28,28 @@ def test_extracted_page_rejects_page_zero() -> None:
             text="Course policies",
             filename="cs101-syllabus.pdf",
             page_number=0,
+        )
+
+
+def test_document_chunk_preserves_identity_and_citation() -> None:
+    chunk = DocumentChunk(
+        text="Exams are worth 40%.",
+        course_id="course_a81f",
+        filename="cs101-syllabus.pdf",
+        page_number=2,
+        chunk_number=3,
+    )
+
+    assert chunk.model_dump()["course_id"] == "course_a81f"
+    assert chunk.model_dump()["chunk_number"] == 3
+
+
+def test_document_chunk_rejects_chunk_zero() -> None:
+    with pytest.raises(ValidationError):
+        DocumentChunk(
+            text="Homework is worth 30%.",
+            course_id="course_a81f",
+            filename="cs101-syllabus.pdf",
+            page_number=1,
+            chunk_number=0,
         )

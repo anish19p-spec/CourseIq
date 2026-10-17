@@ -40,7 +40,7 @@ def validate_pdf_upload(filename: str | None, content: bytes) -> None:
         raise PDFValidationError("Upload does not contain a valid PDF signature.")
 
 
-def extract_text_from_pdf(pdf_path: str) -> ExtractedDocument:
+def extract_text_from_pdf(pdf_path: str, source_filename: str | None = None) -> ExtractedDocument:
     """Extract readable PDF pages and report page-level warnings."""
 
     path = Path(pdf_path)
@@ -67,7 +67,7 @@ def extract_text_from_pdf(pdf_path: str) -> ExtractedDocument:
             extracted_pages.append(
                 ExtractedPage(
                     text=page_text.strip(),
-                    filename=path.name,
+                    filename=source_filename if source_filename is not None else path.name,
                     page_number=page_number,
                 )
             )

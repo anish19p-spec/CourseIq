@@ -14,4 +14,5 @@ dist/
 build/
 .venv/
 .worktrees/
+.data/chroma/
 frontend/tsconfig.tsbuildinfo

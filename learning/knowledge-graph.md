@@ -119,32 +119,112 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 - status: practicing
 - depends-on: none
 - introduced: 2026-07-31
-- last-reviewed: 2026-08-12
-- evidence: Identified page number and content as model fields, recalled filename after prompting, and explained that invented page numbers would pull fake information.
+- last-reviewed: 2026-09-27
+- evidence: Chose a stable generated course ID, distinguished professor-specific offerings as separate records, and filled the document-wide chunk number in a tested model.
+
+## [[document-chunk-model]]
+
+- status: practicing
+- depends-on: [[document-metadata]], [[pydantic-models]], [[recursive-chunking]]
+- introduced: 2026-09-27
+- last-reviewed: 2026-09-30
+- evidence: Connected chunks to recursive splitting, corrected document-wide numbering from list length to length plus one after guidance, and ran the full 21-test suite successfully.
 
 ## [[recursive-chunking]]
 
-- status: introduced
+- status: practicing
 - depends-on: [[pdf-text-extraction]]
 - introduced: 2026-07-31
-- last-reviewed: 2026-08-01
-- evidence: Explained that overlap supplies additional boundary context; needed help identifying duplicate retrieval costs and the non-advancing-loop edge case.
+- last-reviewed: 2026-10-08
+- evidence: Recalled that overlap preserves context between chunks, wired the legacy RAG entry point to the recursive splitter, and ran the full 22-test suite successfully.
+
+## [[process-isolation-in-tests]]
+
+- status: introduced
+- depends-on: [[automated-testing]], [[python-control-flow]]
+- introduced: 2026-09-27
+- last-reviewed: 2026-09-27
+- evidence: Asked whether the child-process timeout checks an infinite loop and explained that one test covers character overlap while the other covers overlap equal to chunk size.
 
 ## [[embeddings-and-vector-search]]
 
-- status: seed
+- status: practicing
 - depends-on: [[recursive-chunking]]
-- introduced: not yet
-- last-reviewed: not yet
-- evidence: Prior familiarity was self-reported but has not yet been demonstrated through a probe.
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Explained that embeddings let retrieval compare wording similarity for contextual meaning.
 
 ## [[chromadb-collections]]
 
-- status: seed
+- status: introduced
 - depends-on: [[embeddings-and-vector-search]], [[document-metadata]]
-- introduced: not yet
-- last-reviewed: not yet
-- evidence: Prior familiarity was self-reported but has not yet been demonstrated through a probe.
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Used Chroma's `is_persistent` setting to characterize the borrowed client as memory-only and ran the 23-test suite successfully.
+
+## [[frontend-course-api-integration]]
+
+- status: introduced
+- depends-on: [[frontend-backend-boundary]], [[question-api-validation]]
+- introduced: 2026-10-16
+- last-reviewed: 2026-10-16
+- evidence: React component state, effects, course-key resets, API requests, and cancellation were explained; independent recall remains pending.
+
+## [[course-catalog-persistence]]
+
+- status: introduced
+- depends-on: [[database-schema-and-records]], [[pydantic-models]], [[persistent-vector-storage]]
+- introduced: 2026-10-16
+- last-reviewed: 2026-10-16
+- evidence: CourseSummary, a local SQLite catalog, unique course IDs, and transactions were explained; independent recall remains pending.
+
+## [[question-api-validation]]
+
+- status: introduced
+- depends-on: [[pydantic-models]], [[course-filtered-vector-retrieval]], [[source-citation-formatting]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: JSON question requests, whitespace trimming, bounded result limits, and structured evidence responses were explained; independent recall remains pending.
+
+## [[upload-to-index-integration]]
+
+- status: introduced
+- depends-on: [[fastapi-request-flow]], [[document-chunk-model]], [[persistent-vector-storage]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Generated upload course IDs, original filename preservation, and thread-pool execution were explained; independent recall remains pending.
+
+## [[source-citation-formatting]]
+
+- status: introduced
+- depends-on: [[document-metadata]], [[course-filtered-vector-retrieval]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Source-faithful filename/page formatting and joining excerpts were explained; independent recall remains pending.
+
+## [[course-filtered-vector-retrieval]]
+
+- status: introduced
+- depends-on: [[embeddings-and-vector-search]], [[document-metadata]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Course filtering, bounded result counts, and raw distance were explained; independent explanation remains pending.
+
+## [[deterministic-record-ids-and-upsert]]
+
+- status: introduced
+- depends-on: [[document-metadata]], [[chromadb-collections]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Agreed to deterministic IDs and upsert for duplicate indexing; hashing and exact-retry behavior were explained, with independent explanation still pending.
+
+## [[persistent-vector-storage]]
+
+- status: introduced
+- depends-on: [[chromadb-collections]]
+- introduced: 2026-10-09
+- last-reviewed: 2026-10-09
+- evidence: Accepted local persistence for the MVP; persistent paths and temporary test storage were explained, with independent recall still pending.
 
 ## [[python-control-flow]]
 

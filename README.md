@@ -10,6 +10,34 @@ CourseIQ is an AI-powered academic planning platform that parses syllabus PDFs, 
 
 ## Runtime Contract
 
+`POST /api/courses` accepts multipart `course_name` and a PDF `file`. It indexes
+readable pages under a new course ID and returns `course_id`, `course_name`,
+`filename`, `chunk_count`, and extraction `warnings` with status 201. Citations
+use the uploaded filename. Each request creates a separate course record.
+This endpoint requires Gemini credentials; automated upload tests substitute
+extraction and embeddings while using real temporary Chroma storage.
+
+`GET /api/courses` returns saved course summaries as a JSON array. The catalog
+is stored in `courses.sqlite3` inside the configured Chroma storage folder and
+survives backend restarts. It records successful uploads from this version
+onward; existing chunks without catalog entries are not backfilled. This local
+MVP catalog is shared and does not yet implement user accounts.
+
+The frontend opens on the Courses tab: upload a PDF, select a saved course,
+and ask questions to display retrieved excerpts with citations. Courses reload
+from the API when this tab opens. Intake and Insights retain the separate
+workload-analysis flow. A controlled two-course Chrome check verified upload,
+course switching, citations, and backend restart persistence. Extraction and
+embeddings were substituted; real-PDF/live-provider checks remain pending.
+See `learning/ui-smoke-check.md` for the scope and observed results.
+
+`POST /api/courses/{course_id}/questions` accepts JSON:
+`{"question": "What is homework worth?", "n_results": 5}`. Questions must be
+1–2000 characters after trimming; `n_results` is an integer from 1 to 10.
+The response includes `course_id`, `question`, structured `evidence`, and
+`cited_evidence` excerpts. These are retrieved source excerpts, not generated
+answers. No matching records returns an empty list and an explanatory message.
+
 The frontend submits a `multipart/form-data` request to `POST /api/analyze` with:
 
 - `course_name`
@@ -57,6 +85,17 @@ export GEMINI_API_KEY="your-key"
 python -m pytest
 python -m uvicorn main:app --reload --port 8000 --app-dir backend
 ```
+
+RAG storage is created on first use in `.data/chroma/` in this checkout. Set
+`COURSEIQ_CHROMA_PATH` to choose a different persistent directory. Reuse the
+same directory after restarting the backend to retain indexed evidence.
+Tests use temporary directories. Chroma data files are excluded from Git.
+
+Embedding requests use `gemini-embedding-2`. Set `GEMINI_API_KEY` in the
+backend environment or a worktree-root `.env` file and restart the backend.
+The upload/question API returns an actionable 503 if the key is missing.
+Vectors from different embedding models must not be mixed; existing older-model
+indexes need a separate storage directory and reindexing when migrating models.
 
 ### Frontend
 
