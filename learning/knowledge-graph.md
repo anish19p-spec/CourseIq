@@ -218,6 +218,14 @@ Statuses progress as `seed → introduced → practicing → understood`. A conc
 - last-reviewed: 2026-10-09
 - evidence: Course filtering, bounded result counts, and raw distance were explained; independent explanation remains pending.
 
+## [[static-call-site-audit]]
+
+- status: seed
+- depends-on: [[python-module-imports]], [[automated-testing]]
+- introduced: 2026-10-26
+- last-reviewed: none
+- evidence: Unreferenced legacy RAG code was removed after checking repository call sites; independent explanation of how to distinguish dead code from test- or CLI-used code remains pending.
+
 ## [[deterministic-record-ids-and-upsert]]
 
 - status: introduced

@@ -82,6 +82,7 @@ CourseIQ helps students compare class difficulty and understand professor feedba
 
 - [x] Retrieve relevant chunks while filtering by `course_id` and limiting result counts safely.
 - [x] Return filename/page citations and verify persisted retrieval after reopening the database.
+- [x] Remove unreferenced global-document demo and chatbot scaffolding while preserving app- and test-used RAG helpers.
 
 Indexing retries use hashes of exact chunk content and source metadata. Revised-syllabus replacement and obsolete-chunk cleanup remain part of future upload versioning.
 

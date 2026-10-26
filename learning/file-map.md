@@ -37,7 +37,7 @@ This map is intentionally parked-heavy. That is an honest learning backlog, not 
 | `backend/tests/test_ingestion_benchmark.py` | known | Exercises real synthetic-PDF extraction, isolated storage, raw token metadata, retries, failures, timers and CLI reports without network calls. → [[ingestion-performance-measurement]] |
 | `benchmark-results/` | generated | Git-ignored per-run JSON performance reports; can regenerate and compare using identical inputs/settings. |
 | `backend/course_store.py` | known | Saves course summaries in a local SQLite catalog and lists them after restart using the shared storage directory. → [[course-catalog-persistence]] |
-| `backend/rag_pipeline.py` | known | Embeds chunks and questions, retrieves course-filtered evidence, and formats source citations; borrowed chatbot functions still require integration. → [[recursive-chunking]], [[embeddings-and-vector-search]], [[course-filtered-vector-retrieval]] |
+| `backend/rag_pipeline.py` | known | Embeds chunks and questions, retrieves course-filtered evidence, formats citations, and keeps compatibility wrappers covered by tests. → [[recursive-chunking]], [[embeddings-and-vector-search]], [[course-filtered-vector-retrieval]] |
 | `backend/engine.py` | parked | Applies deterministic workload rules to structured syllabus data; reclaim when category-level estimates are redesigned. → [[workload-estimation]] |
 | `backend/requirements.txt` | known | Declares reproducible Python dependencies that are installed into a virtual environment. → [[virtual-environments-and-requirements]] |
 | `backend/requirements-dev.txt` | known | Extends runtime requirements with reproducible development-only test dependencies; authored and revised during the smoke-test lesson. → [[automated-testing]] |
