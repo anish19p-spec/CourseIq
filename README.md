@@ -6,7 +6,7 @@ CourseIQ is an AI-powered academic planning platform that parses syllabus PDFs, 
 
 - `frontend/` - Next.js App Router + Tailwind UI for upload, profile capture, and analytics
 - `backend/` - FastAPI service for PDF ingestion, Gemini extraction, and workload calculations
-- `database/` - PostgreSQL schema for users, courses, syllabi, and student history
+- `database/` - planned PostgreSQL schema; it is not used by the current app
 
 ## Runtime Contract
 
@@ -135,7 +135,10 @@ Develop, test, commit, and push inside that worktree. After its pull request is 
 
 ## Database
 
-Apply `database/schema.sql` to a PostgreSQL database with `pgcrypto` enabled.
+The current app stores course summaries in local SQLite and syllabus vectors in
+ChromaDB under `COURSEIQ_CHROMA_PATH`; PostgreSQL is not required to run it.
+`database/schema.sql` is a future schema proposal and is not connected to the
+current runtime.
 
 ## Notes
 
