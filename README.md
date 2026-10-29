@@ -30,6 +30,8 @@ workload-analysis flow. A controlled two-course Chrome check verified upload,
 course switching, citations, and backend restart persistence. Extraction and
 embeddings were substituted; real-PDF/live-provider checks remain pending.
 The saved-course workload controls described below reuse indexed syllabi.
+The combined review/workload browser flow was also checked with isolated synthetic
+data; see [dashboard verification](docs/dashboard-verification.md) for its scope.
 
 ## Workload estimates
 
@@ -85,6 +87,36 @@ numeric facts from one summer syllabus, with its file hash and reviewed pages.
 It tests the 10-week term and missing category data without distributing the PDF
 or contacting Gemini. This is an engine regression case, not validation of live
 AI extraction quality.
+
+## Student reviews
+
+Open **Reviews** to publish a first-hand course review or browse the shared feed.
+No syllabus upload is required. Students enter their school, course code,
+professor, optional term, difficulty (1–5), optional weekly hours outside class,
+and a 20–3,000-character comment. The form requires agreement to publish.
+Reviews are anonymous and labeled unverified; accounts and moderation are not
+implemented in this version. Review text is displayed as plain text.
+
+Reviews are grouped by school and normalized course code, independently of
+syllabus-upload IDs. `csce120`, `CSCE 120`, and `CSCE-120` all normalize to
+`CSCE 120`; TAMU school-name aliases normalize to `Texas A&M University`.
+Professor and term remain visible so readers can distinguish experiences.
+
+- `POST /api/reviews` publishes a review with status 201. Required JSON fields:
+  `course_code`, `professor_name`, `difficulty`, `body`, and
+  `consent_to_publish: true`. `institution` defaults to Texas A&M University;
+  `term` and `weekly_hours` are optional. The server assigns the ID, UTC date,
+  source (`student_submission`), and unverified status.
+- `GET /api/reviews` returns `{items, total, offset, limit}`, newest first.
+  Optional filters are `course_code` and `institution`. The default page size is
+  20, with a maximum of 50; `offset` starts at zero.
+
+The `student_reviews` table lives in `courses.sqlite3` under
+`COURSEIQ_CHROMA_PATH` and survives backend restarts. Visitors connected to the
+same backend see the same reviews. Separate local installations have separate
+databases; making the GitHub repository public does not host this service.
+This feature makes no Gemini calls and does not automatically add reviews to
+the RAG index or workload calculations.
 
 `POST /api/courses/{course_id}/questions` accepts JSON:
 `{"question": "What is homework worth?", "n_results": 5}`. Questions must be

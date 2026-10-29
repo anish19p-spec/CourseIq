@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import tempfile
+import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,6 +17,8 @@ from documents import CourseSummary
 from engine import CourseAnalyzer, analyze_schedule
 from workload_store import CourseWorkload, StudentProfile, list_workloads, save_workload
 from vector_store import load_course_chunks
+from reviews import ReviewPage, ReviewSubmission, StudentReview
+from review_store import create_review, list_reviews
 from rag_pipeline import EmbeddingConfigurationError, index_document_chunks, retrieve_course_evidence, format_course_evidence
 from extract import (
 	MAX_PDF_SIZE_BYTES,
@@ -68,6 +71,29 @@ async def _write_upload_to_temp_pdf(upload: UploadFile) -> str:
 @app.get("/health")
 def health_check() -> dict[str, str]:
 	return {"status": "ok"}
+
+
+@app.post("/api/reviews", response_model=StudentReview, status_code=201)
+def publish_review(submission: ReviewSubmission) -> StudentReview:
+	try:
+		return create_review(submission)
+	except sqlite3.Error as exc:
+		raise HTTPException(status_code=503, detail="Reviews are temporarily unavailable. Please try again.") from exc
+
+
+@app.get("/api/reviews", response_model=ReviewPage)
+def get_reviews(
+	course_code: str | None = Query(default=None, max_length=20),
+	institution: str | None = Query(default=None, max_length=120),
+	limit: int = Query(default=20, ge=1, le=50),
+	offset: int = Query(default=0, ge=0),
+) -> ReviewPage:
+	try:
+		return list_reviews(course_code=course_code, institution=institution, limit=limit, offset=offset)
+	except ValueError as exc:
+		raise HTTPException(status_code=422, detail=str(exc)) from exc
+	except sqlite3.Error as exc:
+		raise HTTPException(status_code=503, detail="Reviews are temporarily unavailable. Please try again.") from exc
 
 
 @app.post("/api/analyze")
