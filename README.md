@@ -23,10 +23,12 @@ survives backend restarts. It records successful uploads from this version
 onward; existing chunks without catalog entries are not backfilled. This local
 MVP catalog is shared and does not yet implement user accounts.
 
-The frontend opens on the Courses tab: upload a PDF, select a saved course,
-and ask questions to display retrieved excerpts with citations. Courses reload
-from the API when this tab opens. Intake and Insights retain the separate
-workload-analysis flow. A controlled two-course Chrome check verified upload,
+The frontend opens on **My courses**. Choose **Add course** to upload a PDF
+(up to 10 MB) through the single saved-course flow, then set subject comfort
+and estimate workload from the saved syllabus. There is no separate Intake
+upload or temporary Insights screen. The dashboard stays mounted when switching
+to reviews so an active upload is not discarded. Saved courses load from the
+API when the dashboard mounts. A controlled two-course Chrome check verified upload,
 course switching, citations, and backend restart persistence. Extraction and
 embeddings were substituted; real-PDF/live-provider checks remain pending.
 The saved-course workload controls described below reuse indexed syllabi.

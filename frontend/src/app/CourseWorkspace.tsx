@@ -2,14 +2,8 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import SavedWorkloadWorkspace from "./SavedWorkloadWorkspace";
-
-type Course = {
-  course_id: string;
-  course_name: string;
-  filename: string;
-  chunk_count: number;
-  warnings: string[];
-};
+import CourseUpload, { Course } from "./CourseUpload";
+import { BookOpen, CheckCircle2, Plus } from "lucide-react";
 
 type Evidence = { id: string; text: string; filename: string; page_number?: number | null };
 type QuestionResult = { question: string; evidence: Evidence[]; cited_evidence: string };
@@ -87,10 +81,11 @@ export default function CourseWorkspace({ apiBaseUrl }: { apiBaseUrl: string }) 
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
   const [loadError, setLoadError] = useState("");
-  const [uploadError, setUploadError] = useState("");
   const [reload, setReload] = useState(0);
+  const addButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -114,64 +109,47 @@ export default function CourseWorkspace({ apiBaseUrl }: { apiBaseUrl: string }) 
     return () => controller.abort();
   }, [apiBaseUrl, reload]);
 
-  async function upload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const name = String(data.get("course_name") ?? "").trim();
-    const file = data.get("file");
-    setUploadError("");
-    if (!name || !(file instanceof File) || !file.name.toLowerCase().endsWith(".pdf")) {
-      setUploadError("Enter a course name and select a PDF syllabus.");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError("PDF upload exceeds the 10 MB limit.");
-      return;
-    }
-    data.set("course_name", name);
-    setUploading(true);
-    try {
-      const response = await fetch(`${apiBaseUrl}/api/courses`, { method: "POST", body: data });
-      const course = await readResponse<Course>(response);
-      setCourses(previous => [...previous, course]);
-      setSelectedId(course.course_id);
-      form.reset();
-    } catch (failure) {
-      setUploadError(failure instanceof Error ? failure.message : "Unable to upload syllabus.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   const selected = courses.find(course => course.course_id === selectedId);
-  return <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+  return <div className="space-y-6">
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-300">Your semester, at a glance</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">My courses</h1>
+        <p className="mt-2 text-sm text-slate-400">Save syllabi, compare weekly workloads, and explore the details.</p></div>
+      {!showUpload && <button ref={addButton} type="button" disabled={loading || Boolean(loadError)} onClick={() => { setSavedMessage(""); setShowUpload(true); }}
+        className={`${button} inline-flex items-center gap-2 hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300`}>
+        <Plus className="h-4 w-4" />Add course</button>}
+    </div>
+    {savedMessage && <p role="status" className="flex items-center gap-2 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-200"><CheckCircle2 className="h-5 w-5 shrink-0" />{savedMessage}</p>}
+    {showUpload && <CourseUpload apiBaseUrl={apiBaseUrl} onClose={() => {
+      setShowUpload(false); requestAnimationFrame(() => addButton.current?.focus());
+    }} onSaved={course => {
+      setCourses(previous => [...previous, course]); setSelectedId(course.course_id); setShowUpload(false);
+      setSavedMessage(`${course.course_name} is saved. Set your comfort level below to estimate its workload.`);
+      requestAnimationFrame(() => document.getElementById("selected-course")?.focus());
+    }} />}
+    {!loading && !loadError && courses.length === 0 && !showUpload ? <section className="rounded-3xl border border-dashed border-white/15 bg-slate-950/40 px-6 py-16 text-center">
+      <BookOpen className="mx-auto mb-5 h-10 w-10 text-emerald-300" aria-hidden="true" />
+      <h2 className="text-xl font-semibold text-white">A clearer schedule starts with your syllabus</h2>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-400">Use Add course to save your first PDF. Your courses and workload estimates will live here—no repeat uploads needed.</p>
+      <p className="mt-5 text-xs text-slate-500">Text-based PDF · Up to 10 MB</p>
+    </section> : !loading && !loadError && courses.length === 0 ? null : <div className="grid items-start gap-6 lg:grid-cols-[minmax(260px,0.65fr)_minmax(0,1.35fr)]">
     <div className="space-y-6">
       <section className={panel}>
         <h2 className="text-xl font-semibold text-white">Saved courses</h2>
         {loading ? <p role="status" className="text-slate-300">Loading courses…</p> : loadError ?
           <div><p role="alert" className="mb-3 text-rose-200">{loadError}</p><button className={button} onClick={() => setReload(value => value + 1)}>Retry loading</button></div> :
-          courses.length === 0 ? <p className="text-slate-300">No saved courses yet. Upload a syllabus below.</p> :
+          courses.length === 0 ? <p className="text-slate-300">Your saved courses will appear here.</p> :
           <><label htmlFor="selected-course" className="block text-sm text-slate-300">Selected course</label>
             <select id="selected-course" className={input} value={selectedId} onChange={event => setSelectedId(event.target.value)}>
               {courses.map((course, index) => <option key={course.course_id} value={course.course_id}>{course.course_name} — {course.filename} ({index + 1})</option>)}
             </select></>}
       </section>
-      <form onSubmit={upload} className={panel}>
-        <h2 className="text-xl font-semibold text-white">Add a course</h2>
-        <label htmlFor="saved-course-name" className="block text-sm text-slate-300">Course name</label>
-        <input id="saved-course-name" name="course_name" required className={input} placeholder="CSCE 221 · Fall 2026" disabled={uploading} />
-        <label htmlFor="saved-course-file" className="block text-sm text-slate-300">Syllabus PDF (up to 10 MB)</label>
-        <input id="saved-course-file" name="file" type="file" accept=".pdf,application/pdf" required className={input} disabled={uploading} />
-        <button className={button} disabled={uploading || loading || Boolean(loadError)}>{uploading ? "Reading and indexing…" : "Save syllabus"}</button>
-        <p className="text-xs text-slate-400">Each upload creates a separate course. Saved courses are shared on this local installation.</p>
-        {uploadError && <p role="alert" className="text-rose-200">{uploadError}</p>}
-      </form>
     </div>
     <div className="space-y-6">
     <SavedWorkloadWorkspace courses={courses} selectedId={selectedId} apiBaseUrl={apiBaseUrl} />
     {selected ? <CourseQuestions key={selected.course_id} course={selected} apiBaseUrl={apiBaseUrl} /> :
       <section className={panel}><h2 className="text-xl font-semibold text-white">Explore your syllabus</h2><p className="text-slate-300">Select or upload a course to ask questions and see source excerpts with page citations.</p></section>}
     </div>
+    </div>}
   </div>;
 }
