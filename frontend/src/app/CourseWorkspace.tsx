@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import SavedWorkloadWorkspace from "./SavedWorkloadWorkspace";
 
 type Course = {
   course_id: string;
@@ -167,7 +168,10 @@ export default function CourseWorkspace({ apiBaseUrl }: { apiBaseUrl: string }) 
         {uploadError && <p role="alert" className="text-rose-200">{uploadError}</p>}
       </form>
     </div>
+    <div className="space-y-6">
+    <SavedWorkloadWorkspace courses={courses} selectedId={selectedId} apiBaseUrl={apiBaseUrl} />
     {selected ? <CourseQuestions key={selected.course_id} course={selected} apiBaseUrl={apiBaseUrl} /> :
       <section className={panel}><h2 className="text-xl font-semibold text-white">Explore your syllabus</h2><p className="text-slate-300">Select or upload a course to ask questions and see source excerpts with page citations.</p></section>}
+    </div>
   </div>;
 }

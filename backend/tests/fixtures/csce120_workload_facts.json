@@ -1,0 +1,33 @@
+{
+  "source": {
+    "filename": "csce120 syllabus.pdf",
+    "sha256": "508f5ba98f8b129bac784046d66d1999faf856c2771d49fbff3e7c9499313fca",
+    "reviewed_pages": [1, 3, 4, 5, 6, 7],
+    "label_method": "Manually checked against PDF text and rendered grading/schedule pages; not a Gemini extraction. No source PDF or instructor contact details are included."
+  },
+  "syllabus": {
+    "course_name": "CSCE 120",
+    "total_projects": 0,
+    "total_midterms": 2,
+    "total_homeworks": 0,
+    "has_final_exam": true,
+    "course_level": "100-level",
+    "course_type": "coding",
+    "credit_hours": 3,
+    "semester_weeks": 10,
+    "assignment_categories": [
+      {"category": "Homework", "category_type": "homework", "grade_weight_percent": 32,
+       "submission_cadence": "weekly", "assignment_count": null, "weekly_frequency": null},
+      {"category": "Labwork", "category_type": "lab", "grade_weight_percent": 16},
+      {"category": "Midterm Exams", "category_type": "exam", "grade_weight_percent": 16, "assignment_count": 2},
+      {"category": "Final Exam", "category_type": "final_exam", "grade_weight_percent": 20, "assignment_count": 1},
+      {"category": "Class Engagement", "category_type": "quiz", "grade_weight_percent": 16}
+    ]
+  },
+  "expected": {
+    "known_weekly_hours_at_neutral_profile": 2.6,
+    "estimate_complete": false,
+    "grading_weight_total": 100,
+    "unknown_category_count": 3
+  }
+}

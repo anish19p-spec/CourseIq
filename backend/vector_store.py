@@ -83,3 +83,13 @@ def search_course_chunks(
             results["metadatas"][0], results["distances"][0],
         )
     ]
+
+
+def load_course_chunks(course_id: str, path: str | Path | None = None) -> list[DocumentChunk]:
+    """Read all saved excerpts for a course without generating an embedding."""
+    if not course_id.strip():
+        raise ValueError("course_id cannot be empty")
+    results = get_collection(path).get(where={"course_id": course_id}, include=["documents", "metadatas"])
+    chunks = [DocumentChunk(text=text, **metadata)
+              for text, metadata in zip(results["documents"], results["metadatas"])]
+    return sorted(chunks, key=lambda chunk: chunk.chunk_number)
