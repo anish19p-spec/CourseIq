@@ -26,5 +26,7 @@ def list_courses(path: str | Path | None = None) -> list[CourseSummary]:
     if not database.exists():
         return []
     with closing(sqlite3.connect(database)) as connection:
+        if not connection.execute("SELECT name FROM sqlite_master WHERE name='courses'").fetchone():
+            return []
         rows = connection.execute("SELECT summary FROM courses ORDER BY course_id").fetchall()
     return [CourseSummary.model_validate_json(row[0]) for row in rows]

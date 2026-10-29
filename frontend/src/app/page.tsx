@@ -2,6 +2,7 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useRef, useState } from "react";
 import CourseWorkspace from "./CourseWorkspace";
+import StudentReviews from "./StudentReviews";
 import {
   ArrowRight,
   BadgeCheck,
@@ -83,7 +84,7 @@ function MetricCard({
 }
 
 export default function Page() {
-  const [activeView, setActiveView] = useState<"courses" | "ingestion" | "analytics">("courses");
+  const [activeView, setActiveView] = useState<"courses" | "reviews" | "ingestion" | "analytics">("courses");
   const [courseName, setCourseName] = useState("");
   const [gpa, setGpa] = useState("3.50");
   const [comfortLevel, setComfortLevel] = useState(5);
@@ -185,10 +186,14 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-2">
             <button type="button" onClick={() => setActiveView("courses")}
               className={`rounded-xl px-4 py-2 text-sm font-semibold ${activeView === "courses" ? "bg-emerald-400 text-slate-950" : "text-slate-300 hover:bg-white/5"}`}>
               Courses
+            </button>
+            <button type="button" onClick={() => setActiveView("reviews")} aria-pressed={activeView === "reviews"}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${activeView === "reviews" ? "bg-emerald-400 text-slate-950" : "text-slate-300 hover:bg-white/5"}`}>
+              Reviews
             </button>
             <button
               type="button"
@@ -218,7 +223,7 @@ export default function Page() {
           </div>
         </header>
 
-        {activeView === "courses" ? <CourseWorkspace apiBaseUrl={API_BASE_URL} /> : activeView === "ingestion" ? (
+        {activeView === "reviews" ? <StudentReviews apiBaseUrl={API_BASE_URL} /> : activeView === "courses" ? <CourseWorkspace apiBaseUrl={API_BASE_URL} /> : activeView === "ingestion" ? (
           <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
             <form onSubmit={submitAnalysis} className={cardShell("p-6 sm:p-8") }>
               <div
