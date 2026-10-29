@@ -2,6 +2,7 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useRef, useState } from "react";
 import CourseWorkspace from "./CourseWorkspace";
+import WorkloadBreakdown, { WorkloadReport } from "./WorkloadBreakdown";
 import {
   ArrowRight,
   BadgeCheck,
@@ -22,12 +23,9 @@ type SyllabusData = {
   has_final_exam: boolean;
 };
 
-type AnalysisResponse = {
+type AnalysisResponse = WorkloadReport & {
   course_name: string;
   target_grade: string;
-  weekly_hours: number;
-  risk_level: string;
-  student_multiplier: number;
   syllabus: SyllabusData;
   assignment_inventory: {
     projects: number;
@@ -42,6 +40,9 @@ const GRADE_OPTIONS = ["A", "A-", "B+", "B", "B-", "C+", "C"];
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 function riskTone(riskLevel: string) {
+  if (riskLevel === "Incomplete estimate") {
+    return "border-slate-400/30 bg-slate-500/15 text-slate-100";
+  }
   if (riskLevel === "High Risk") {
     return "border-rose-400/30 bg-rose-500/15 text-rose-100";
   }
@@ -387,8 +388,8 @@ export default function Page() {
               <>
                 <div className="grid gap-6 lg:grid-cols-2">
                   <MetricCard
-                    label="Estimated Weekly Workload"
-                    value={`${analysis.weekly_hours.toFixed(1)} hrs`}
+                    label={analysis.estimate_complete ? "Estimated Weekly Workload" : "Known Weekly Subtotal"}
+                    value={analysis.weekly_hours == null ? "Unknown" : `${analysis.weekly_hours.toFixed(1)} hrs`}
                     detail={`Based on ${analysis.syllabus.course_name} and a ${analysis.student_multiplier.toFixed(2)}x student adjustment.`}
                     icon={<CalendarRange className="h-5 w-5" />}
                   />
@@ -405,47 +406,13 @@ export default function Page() {
                         {analysis.risk_level}
                       </div>
                       <p className="max-w-lg text-sm leading-6 text-slate-300">
-                        The badge updates directly from the backend string response, so the UI reflects the deterministic engine without a second local rule layer.
+                        Intensity uses provisional weekly-hour thresholds. Missing activity data is flagged as an incomplete estimate.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className={cardShell("p-6 sm:p-8") }>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">Semester heatmap</h3>
-                      <p className="mt-1 text-sm text-slate-400">Weeks 6 and 12 are marked as peak workload checkpoints for midterms and crunch periods.</p>
-                    </div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-amber-100">
-                      <CircleAlert className="h-3.5 w-3.5" />
-                      Peak workload weeks highlighted
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7 xl:grid-cols-14">
-                    {Array.from({ length: 14 }, (_, index) => {
-                      const week = index + 1;
-                      const isPeak = week === 6 || week === 12;
-                      return (
-                        <div
-                          key={week}
-                          className={`rounded-2xl border p-3 text-center transition ${
-                            isPeak
-                              ? "border-amber-300/40 bg-amber-500/15 shadow-[0_12px_30px_rgba(245,158,11,0.18)]"
-                              : "border-white/10 bg-white/5"
-                          }`}
-                        >
-                          <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Week</div>
-                          <div className="mt-1 text-2xl font-semibold text-white">{week}</div>
-                          <div className={`mt-3 rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${isPeak ? "bg-amber-300 text-slate-950" : "bg-white/10 text-slate-300"}`}>
-                            {isPeak ? "Peak" : "Normal"}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <WorkloadBreakdown report={analysis} />
 
                 <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
                   <div className={cardShell("overflow-hidden") }>

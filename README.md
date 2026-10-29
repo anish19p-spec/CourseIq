@@ -29,7 +29,62 @@ from the API when this tab opens. Intake and Insights retain the separate
 workload-analysis flow. A controlled two-course Chrome check verified upload,
 course switching, citations, and backend restart persistence. Extraction and
 embeddings were substituted; real-PDF/live-provider checks remain pending.
-See `learning/ui-smoke-check.md` for the scope and observed results.
+The saved-course workload controls described below reuse indexed syllabi.
+
+## Workload estimates
+
+Select a saved course and choose **Estimate and save workload**. The first estimate
+reads its indexed excerpts with Gemini (`gemini-2.5-flash`) and saves the extracted
+facts and student profile in SQLite. Profile updates reuse those facts. Selecting
+**Re-read syllabus with Gemini** explicitly requests another extraction. Loading
+the dashboard and comparing courses make no AI calls or new embeddings.
+Structured extraction uses Gemini 2.5 Flash with `thinking_budget=0` to reduce
+optional reasoning work during fact extraction; the JSON schema and validation
+still apply. Difficult syllabi may need a higher budget, so extraction quality
+should be checked alongside latency when adjusting this setting.
+If a category count is omitted but a positive course-wide count is available,
+the engine reuses it only when exactly one activity category matches. Explicit
+category counts remain unchanged, and ambiguous totals stay unknown.
+See [the workload extraction timing comparison](backend/benchmarks/workload-extraction.md)
+for measured latency, token usage, and the observed extraction-quality tradeoff.
+
+- `POST /api/courses/{course_id}/workload` accepts `{"comfort_level": 5, "gpa": 0}`;
+  optional `"refresh": true` re-extracts the saved syllabus.
+- `GET /api/workload/schedule` reloads saved estimates, the total known weekly
+  hours, and each course's percentage of that known total.
+- `POST /api/workload/schedule` compares already-extracted data without saving it;
+  its `courses` list contains distinct `course_id`, `syllabus`, and profile fields.
+
+For each activity, weekly hours = assignments per week × hours per assignment ×
+student adjustment. Explicit weekly frequency takes precedence; otherwise a
+semester count is divided by the stated term length (default: 14 weeks).
+Submission cadence is retained separately: "submitted weekly" alone does not
+establish how many assignments occur per week.
+Syllabus-stated hours take precedence over provisional defaults: 3 hours per
+homework, 12 per project, 8 per exam, and 10 per final exam. Other activity types
+remain unknown unless a time requirement is stated. These defaults, the existing
+comfort/GPA adjustment, and the 5/9-hour intensity thresholds are uncalibrated
+product assumptions, not measured class difficulty.
+
+Grade weights show grading importance separately from time. Course type and level
+are saved as context for later calibration; no subject-specific multipliers have
+been validated. When credits are available, a separate 2–3 study-hours-per-credit
+planning range links to [TAMU Academic Success Center guidance](https://asc.tamu.edu/courses-presentations/ten-tips.html).
+It is not added to the activity estimate.
+
+Unknown activity time stays `null`. A partial total is labeled a known subtotal;
+shares are percentages of known workload. `estimate_complete` means all listed
+categories can be estimated and no skipped-page warning is present; it does not
+prove that the syllabus describes all study time. Legacy aggregate counts remain
+supported but are flagged as partial because their missing values were recorded
+as zero. Saved estimates survive restarts. Accounts and per-user ownership are
+still pending; this dashboard is shared by the local installation.
+
+`backend/tests/fixtures/csce120_workload_facts.json` contains manually reviewed
+numeric facts from one summer syllabus, with its file hash and reviewed pages.
+It tests the 10-week term and missing category data without distributing the PDF
+or contacting Gemini. This is an engine regression case, not validation of live
+AI extraction quality.
 
 `POST /api/courses/{course_id}/questions` accepts JSON:
 `{"question": "What is homework worth?", "n_results": 5}`. Questions must be
@@ -51,22 +106,18 @@ The backend responds with JSON similar to:
 ```json
 {
   "course_name": "Computer Systems",
-  "weekly_hours": 8.5,
-  "risk_level": "Manageable",
+  "weekly_hours": 3.0,
+  "estimate_complete": true,
+  "risk_level": "Low Risk",
   "student_multiplier": 1.0,
-  "assignment_inventory": {
-    "projects": 2,
-    "midterms": 1,
-    "homeworks": 6,
-    "has_final_exam": true
-  },
-  "syllabus": {
-    "course_name": "Computer Systems",
-    "total_projects": 2,
-    "total_midterms": 1,
-    "total_homeworks": 6,
-    "has_final_exam": true
-  },
+  "category_estimates": [{
+    "category": "Homework",
+    "grade_weight_percent": 40,
+    "weekly_frequency": 1,
+    "hours_per_assignment": 3,
+    "hours_basis": "provisional_default",
+    "weekly_hours": 3
+  }],
   "target_grade": "A-"
 }
 ```
