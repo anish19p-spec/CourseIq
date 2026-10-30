@@ -83,6 +83,7 @@ export default function CourseWorkspace({ apiBaseUrl }: { apiBaseUrl: string }) 
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
+  const [estimateWarning, setEstimateWarning] = useState("");
   const [loadError, setLoadError] = useState("");
   const [reload, setReload] = useState(0);
   const addButton = useRef<HTMLButtonElement>(null);
@@ -115,16 +116,18 @@ export default function CourseWorkspace({ apiBaseUrl }: { apiBaseUrl: string }) 
       <div><p className="text-xs font-semibold uppercase tracking-widest text-emerald-300">Your semester, at a glance</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white">My courses</h1>
         <p className="mt-2 text-sm text-slate-400">Save syllabi, compare weekly workloads, and explore the details.</p></div>
-      {!showUpload && <button ref={addButton} type="button" disabled={loading || Boolean(loadError)} onClick={() => { setSavedMessage(""); setShowUpload(true); }}
+      {!showUpload && <button ref={addButton} type="button" disabled={loading || Boolean(loadError)} onClick={() => { setSavedMessage(""); setEstimateWarning(""); setShowUpload(true); }}
         className={`${button} inline-flex items-center gap-2 hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300`}>
         <Plus className="h-4 w-4" />Add course</button>}
     </div>
     {savedMessage && <p role="status" className="flex items-center gap-2 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-200"><CheckCircle2 className="h-5 w-5 shrink-0" />{savedMessage}</p>}
+    {estimateWarning && <p role="alert" className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-amber-200">{estimateWarning}</p>}
     {showUpload && <CourseUpload apiBaseUrl={apiBaseUrl} onClose={() => {
       setShowUpload(false); requestAnimationFrame(() => addButton.current?.focus());
-    }} onSaved={course => {
+    }} onSaved={(course, warning) => {
       setCourses(previous => [...previous, course]); setSelectedId(course.course_id); setShowUpload(false);
-      setSavedMessage(`${course.course_name} is saved. Set your comfort level below to estimate its workload.`);
+      setSavedMessage(`${course.course_name} is saved. ${warning ? "Its workload estimate is still pending." : "Your weekly total has been updated. Adjust your comfort level below to personalize it."}`);
+      setEstimateWarning(warning ?? "");
       requestAnimationFrame(() => document.getElementById("selected-course")?.focus());
     }} />}
     {!loading && !loadError && courses.length === 0 && !showUpload ? <section className="rounded-3xl border border-dashed border-white/15 bg-slate-950/40 px-6 py-16 text-center">

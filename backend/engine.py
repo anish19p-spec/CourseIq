@@ -167,7 +167,18 @@ class CourseAnalyzer:
         }
 
 
-def analyze_schedule(courses: dict[str, CourseAnalyzer]) -> dict[str, Any]:
+def workload_band(hours: float | None) -> str:
+    """Provisional outside-class planning bands, not measured difficulty."""
+    if hours is None:
+        return "Unknown"
+    if hours < 15:
+        return "Small"
+    if hours < 30:
+        return "Medium"
+    return "Large"
+
+
+def analyze_schedule(courses: dict[str, CourseAnalyzer], *, pending_course_count: int = 0) -> dict[str, Any]:
     """Compare course IDs and label shares of the workload we can estimate."""
     analyses = []
     for course_id, analyzer in courses.items():
@@ -177,12 +188,38 @@ def analyze_schedule(courses: dict[str, CourseAnalyzer]) -> dict[str, Any]:
         analyses.append(analysis)
     known = [course["weekly_hours"] for course in analyses if course["weekly_hours"] is not None]
     total = round(sum(known), 2) if known else None
+    complete = bool(analyses) and not pending_course_count and all(course["estimate_complete"] for course in analyses)
     for course in analyses:
         hours = course["weekly_hours"]
         course["share_of_known_workload_percent"] = (
             round(hours / total * 100, 2) if hours is not None and total else None)
+        rating = None
+        label = "Needs more information"
+        reason = "Estimate every course and resolve missing activity time before comparing workload fit."
+        if complete:
+            if total >= 30 or hours >= 9:
+                rating, label = 1, "Consider a lighter alternative"
+                reason = "The combined schedule is large or this course alone adds at least 9 hours/week. Check your available time before taking it."
+            elif total >= 15 or hours >= 5:
+                rating, label = 2, "Plan carefully"
+                reason = "The schedule is medium or this course adds at least 5 hours/week. Reserve regular study time before committing."
+            else:
+                rating, label = 3, "Favorable workload fit"
+                reason = "The projected schedule is small and this course adds under 5 hours/week. It may fit from a workload perspective."
+        course["workload_fit"] = {
+            "rating": rating, "out_of": 3, "label": label, "reason": reason,
+            "weekly_hours_without_course": round(total - hours, 2) if total is not None and hours is not None else None,
+        }
     return {
         "courses": analyses,
         "total_known_weekly_hours": total,
-        "estimate_complete": bool(analyses) and all(course["estimate_complete"] for course in analyses),
+        "estimate_complete": complete,
+        "estimated_course_count": len(analyses),
+        "pending_course_count": pending_course_count,
+        "workload_level": workload_band(total),
+        "workload_level_is_provisional": not complete,
+        "planning_thresholds": {"medium_from_hours": 15, "large_from_hours": 30},
+        "guidance_note": "Provisional workload-only guidance, not a difficulty score or academic recommendation. "
+                         "Hours cover listed outside-class activities, not scheduled class time or all possible study. "
+                         "Consider prerequisites, degree requirements, interests, and personal commitments before enrolling.",
     }

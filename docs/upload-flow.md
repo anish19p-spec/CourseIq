@@ -1,8 +1,9 @@
 # Course upload flow
 
 The dashboard has one **Add course** entry point. It opens an inline form rather
-than a second upload tab. Save a course first, then use its existing saved-workload
-controls for subject comfort and GPA. Removing the old Intake/Insights UI does not
+than a second upload tab. Saving automatically requests a Gemini workload estimate
+with neutral comfort (5/10) and no GPA adjustment. Then use the saved-workload
+controls to personalize subject comfort and GPA. Removing the old Intake/Insights UI does not
 remove the legacy backend `/api/analyze` endpoint.
 
 The uploader supports choosing or dropping one PDF, replacing/removing a selection,
@@ -16,6 +17,9 @@ progress), and keeps the chosen file/name on a failed request. Success selects
 the saved course and prompts for a workload estimate. Navigation to Student reviews
 keeps the dashboard mounted so it cannot discard a pending upload. Closing the
 form returns keyboard focus to Add course; successful save focuses course selection.
+If Gemini fails after saving, the course remains saved, a separate warning points
+to the estimate retry control, and no duplicate upload is attempted. The tracker
+reloads when the saved-course IDs change or an estimate is updated.
 
 ## Verification
 
@@ -27,13 +31,13 @@ npx tsc --noEmit
 npm run build
 ```
 
-The nine Node tests use the existing TypeScript and React dependencies for
+The Node tests use the existing TypeScript and React dependencies for
 file-validation and server-render checks (limits, controls, and removal of legacy
 navigation). They do not simulate browser events or verify responsive layout.
 The existing backend suite also covers upload validation and persistence.
 
-On this change, nine frontend tests, 131 backend tests, TypeScript, and the
-production build passed. A live browser layout/interaction check could not be
+The upload cleanup previously passed nine frontend tests, 131 backend tests,
+TypeScript, and the production build. A live browser layout/interaction check could not be
 completed because native capture failed and the in-app browser was unavailable.
 Before merging, manually check file picking/drop, invalid-file errors, successful
 save, failed-save retry, tab switching during save, and narrow-screen layout.

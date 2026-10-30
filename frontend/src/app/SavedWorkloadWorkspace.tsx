@@ -1,12 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import WorkloadBreakdown, { WorkloadReport } from "./WorkloadBreakdown";
-
-type CourseReport = WorkloadReport & {
-  course_id: string; course_name: string; share_of_known_workload_percent: number | null;
-};
-type ScheduleReport = { courses: CourseReport[]; total_known_weekly_hours: number | null; estimate_complete: boolean };
+import WorkloadBreakdown from "./WorkloadBreakdown";
+import WorkloadTracker, { CourseReport, ScheduleReport } from "./WorkloadTracker";
 type Course = { course_id: string; course_name: string };
 const inputClass = "w-full rounded-xl border border-white/20 bg-slate-900 p-3 text-white";
 
@@ -74,6 +70,7 @@ export default function SavedWorkloadWorkspace({ courses, selectedId, apiBaseUrl
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
+  const courseIds = courses.map(course => course.course_id).sort().join(",");
   useEffect(() => {
     const controller = new AbortController();
     setError(""); setLoading(true);
@@ -88,25 +85,17 @@ export default function SavedWorkloadWorkspace({ courses, selectedId, apiBaseUrl
       } finally { if (!controller.signal.aborted) setLoading(false); }
     }
     void load(); return () => controller.abort();
-  }, [apiBaseUrl, revision]);
+  }, [apiBaseUrl, revision, courseIds]);
   const selected = courses.find(course => course.course_id === selectedId);
-  const missing = courses.length - (schedule?.courses.length ?? 0);
   return <div className="space-y-6">
-    <section className="space-y-3 rounded-3xl border border-white/10 bg-slate-950/60 p-6">
-      <h2 className="text-xl font-semibold text-white">Combined weekly workload</h2>
+    {(loading || error) && <section className="space-y-3 rounded-3xl border border-white/10 bg-slate-950/60 p-6">
+      <h2 className="text-xl font-semibold text-white">Projected weekly total</h2>
       {loading && <p role="status" className="text-slate-300">Loading saved estimates…</p>}
       {error && <div><p role="alert" className="text-rose-200">{error}</p>
         <button onClick={() => setRevision(value => value + 1)} className="text-emerald-200 underline">Retry</button></div>}
-      {schedule && <>
-        <p className="text-2xl text-white">{schedule.total_known_weekly_hours?.toFixed(1) ?? "Unknown"} hours / week</p>
-        <p className="text-sm text-slate-400">Known workload across saved estimates.{missing > 0 && ` ${missing} course(s) still need an estimate.`}
-          {(!schedule.estimate_complete || missing > 0) && " This total is partial."}</p>
-        <ul className="space-y-2 text-sm text-slate-300">{schedule.courses.map(report => <li key={report.course_id}>
-          {courses.find(course => course.course_id === report.course_id)?.course_name ?? report.course_name}: {report.weekly_hours?.toFixed(1) ?? "Unknown"} hours
-          {report.share_of_known_workload_percent != null && ` · ${report.share_of_known_workload_percent}% of known workload`}
-        </li>)}</ul>
-      </>}
-    </section>
+    </section>}
+    {schedule && !loading && !error && <WorkloadTracker schedule={{...schedule, courses: schedule.courses.map(report => ({...report,
+      course_name: courses.find(course => course.course_id === report.course_id)?.course_name ?? report.course_name}))}} courseCount={courses.length} />}
     {selected && !loading && !error && <CourseEstimate key={selected.course_id} course={selected}
       report={schedule?.courses.find(report => report.course_id === selected.course_id)} apiBaseUrl={apiBaseUrl}
       onSaved={() => setRevision(value => value + 1)} />}

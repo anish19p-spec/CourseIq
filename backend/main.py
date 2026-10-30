@@ -157,10 +157,12 @@ def get_schedule_workload(request: ScheduleWorkloadRequest) -> dict[str, object]
 
 @app.get("/api/workload/schedule")
 def get_saved_schedule_workload() -> dict[str, object]:
+	records = list_workloads()
+	estimated_ids = {record.course_id for record in records}
 	return analyze_schedule({
 		record.course_id: CourseAnalyzer(record.syllabus, {"comfort_level": record.comfort_level, "gpa": record.gpa}, record.warnings)
-		for record in list_workloads()
-	})
+		for record in records
+	}, pending_course_count=sum(course.course_id not in estimated_ids for course in list_courses()))
 
 
 @app.post("/api/courses/{course_id}/workload")

@@ -16,14 +16,34 @@ export function validateSyllabusFiles(files: Pick<File, "name" | "size">[]): str
   return null;
 }
 
+export async function saveCourseAndEstimate(apiBaseUrl: string, data: FormData, onEstimating: () => void, request: typeof fetch = fetch): Promise<{ course: Course; estimateError?: string }> {
+  const response = await request(`${apiBaseUrl}/api/courses`, { method: "POST", body: data });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(typeof body?.detail === "string" ? body.detail : "Syllabus could not be saved. Please try again.");
+  if (!body?.course_id) throw new Error("The server returned an unreadable response. Refresh saved courses before uploading again.");
+  onEstimating();
+  try {
+    const estimate = await request(`${apiBaseUrl}/api/courses/${encodeURIComponent(body.course_id)}/workload`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comfort_level: 5, gpa: 0 }),
+    });
+    if (!estimate.ok) throw new Error("Workload estimate failed.");
+    return { course: body as Course };
+  } catch {
+    // Saving already succeeded. Never repeat the upload after an estimation failure.
+    return { course: body as Course, estimateError: "The syllabus was saved, but its workload could not be estimated. Use Estimate and save workload below to retry—do not upload it again." };
+  }
+}
+
 export default function CourseUpload({ apiBaseUrl, onSaved, onClose }: {
-  apiBaseUrl: string; onSaved: (course: Course) => void; onClose: () => void;
+  apiBaseUrl: string; onSaved: (course: Course, estimateError?: string) => void; onClose: () => void;
 }) {
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [estimating, setEstimating] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   function selectFiles(files: File[]) {
@@ -47,13 +67,10 @@ export default function CourseUpload({ apiBaseUrl, onSaved, onClose }: {
     data.set("course_name", name.trim()); data.set("file", file);
     setBusy(true); setError("");
     try {
-      const response = await fetch(`${apiBaseUrl}/api/courses`, { method: "POST", body: data });
-      const body = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(typeof body?.detail === "string" ? body.detail : "Syllabus could not be saved. Please try again.");
-      if (!body?.course_id) throw new Error("The server returned an unreadable response. Refresh saved courses before uploading again.");
-      onSaved(body as Course);
+      const { course, estimateError } = await saveCourseAndEstimate(apiBaseUrl, data, () => setEstimating(true));
+      onSaved(course, estimateError);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save this syllabus."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setEstimating(false); }
   }
 
   return <section aria-labelledby="add-course-title" className="overflow-hidden rounded-3xl border border-emerald-300/20 bg-slate-950/80 shadow-glow">
@@ -92,15 +109,15 @@ export default function CourseUpload({ apiBaseUrl, onSaved, onClose }: {
         </div>
         {error && <p role="alert" className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</p>}
         <button disabled={busy || !file || !name.trim()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-300 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
-          {busy ? <><LoaderCircle className="h-4 w-4 animate-spin" />Saving syllabus…</> : <>Save course<ArrowRight className="h-4 w-4" /></>}
+          {busy ? <><LoaderCircle className="h-4 w-4 animate-spin" />{estimating ? "Estimating workload…" : "Saving syllabus…"}</> : <>Save course<ArrowRight className="h-4 w-4" /></>}
         </button>
-        <p role="status" aria-live="polite" className="text-xs leading-5 text-slate-400">{busy ? "Reading pages and indexing your syllabus. Keep this page open; this can take a moment." : "Your syllabus will be saved before you estimate workload. Each upload creates a separate course."}</p>
+        <p role="status" aria-live="polite" className="text-xs leading-5 text-slate-400">{busy ? estimating ? "Syllabus saved. Gemini is reviewing it to estimate weekly hours. Keep this page open." : "Reading pages and indexing your syllabus. Keep this page open; this can take a moment." : "Saving also requests a Gemini workload estimate using neutral comfort (5/10) and no GPA adjustment. You can personalize it afterward. Each upload creates a separate course."}</p>
       </div>
       <aside className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-6">
         <h3 className="font-medium text-white">One upload, a clearer plan</h3>
         <ol className="mt-5 space-y-6 text-sm">{[
           ["Save your syllabus", "We keep readable text and page references for later."],
-          ["Make it personal", "Set your subject comfort and estimate weekly workload from the saved course."],
+          ["Get a weekly estimate", "Gemini reviews the saved syllabus. Personalize the estimate with your subject comfort afterward."],
           ["Compare your courses", "See your combined workload and find evidence in each syllabus."],
         ].map(([title, detail], index) => <li key={title} className="flex gap-3">
           <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-300/10 text-xs text-emerald-300">{index + 1}</span>
